@@ -2,6 +2,7 @@
 
 
 describe('Central de Atendimento ao Cliente TAT', function () {
+    const THREE_SECONDS_IN_MS = 3000
     beforeEach(function () {
         cy.visit('./src/index.html')
     })
@@ -13,6 +14,9 @@ describe('Central de Atendimento ao Cliente TAT', function () {
 
     it('Preenchendo os campos obrigatórios e enviando o formulário', function () {
         const longText = 'alguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisaalguma coisa, alguma coisa'
+
+        cy.clock()
+
         cy.get('#firstName').type('Fabiano')
         cy.get('#lastName').type('Melo')
         cy.get('#email').type('svarssel@show.com')
@@ -22,6 +26,10 @@ describe('Central de Atendimento ao Cliente TAT', function () {
         cy.contains('button', 'Enviar').click()
 
         cy.get('.success').should('be.visible')
+
+        cy.tick(THREE_SECONDS_IN_MS)
+
+        cy.get('.success').should('not.be.visible')
     })
 
     it('Exibe mensagem de erro ao submeter o formulário com um email com formatação errada', function () {
@@ -138,17 +146,17 @@ describe('Central de Atendimento ao Cliente TAT', function () {
             })
     })
 
-    it('Seleciona um arquivo simulando um drag-and-drop', function() {
+    it('Seleciona um arquivo simulando um drag-and-drop', function () {
         cy.get('#file-upload')
             .should('not.have.value')
             //arrastando o arquivo
-            .selectFile('./cypress/fixtures/example.json', { action: 'drag-drop'}) 
+            .selectFile('./cypress/fixtures/example.json', { action: 'drag-drop' })
             .should(function ($input) {
                 expect($input[0].files[0].name).to.equal('example.json')
             })
     })
 
-    it('Seleciona um arquivo utilizando uma fixture para a qual foi dada um alias', function() {
+    it('Seleciona um arquivo utilizando uma fixture para a qual foi dada um alias', function () {
         cy.fixture('example.json').as('sampleFile')
         cy.get('#file-upload')
             .selectFile('@sampleFile')
@@ -157,11 +165,11 @@ describe('Central de Atendimento ao Cliente TAT', function () {
             })
     })
 
-    it('Verifica que a política de privacidade abre em outra aba sem a necessidade de um clique', function() {
+    it('Verifica que a política de privacidade abre em outra aba sem a necessidade de um clique', function () {
         cy.get('#privacy a').should('have.attr', 'target', '_blank')
     })
 
-    it('Acessa a página da política de privacidade removendo o target e então clicando no link', function() {
+    it('Acessa a página da política de privacidade removendo o target e então clicando no link', function () {
         cy.get('#privacy a')
             .invoke('removeAttr', 'target')
             .click()
@@ -169,6 +177,44 @@ describe('Central de Atendimento ao Cliente TAT', function () {
         cy.contains('Talking About Testing').should('be.visible')
     })
 
+    it('exibe e esconde as mensagens de sucesso e erro usando o .invoke', function () {
+        cy.get('.success')
+            .should('not.be.visible')
+            .invoke('show')
+            .should('be.visible')
+            .and('contain', 'Mensagem enviada com sucesso.')
+            .invoke('hide')
+            .should('not.be.visible')
+        cy.get('.error')
+            .should('not.be.visible')
+            .invoke('show')
+            .should('be.visible')
+            .and('contain', 'Valide os campos obrigatórios!')
+            .invoke('hide')
+            .should('not.be.visible')
+    })
 
+    it('preenche a area de texto usando o comando invoke', function () {
+        const longText = Cypress._.repeat('0123456789', 20)
+        cy.get('#open-text-area')
+            .invoke('val', longText)
+            .should('have.value', longText)
+    })
+
+    it('Faz uma requisição HTTP', function () {
+        cy.request('https://cac-tat.s3.eu-central-1.amazonaws.com/index.html')
+            .should(function (res) {
+                const { status, statusText, body } = res
+                expect(status).to.equal(200)
+                expect(statusText).to.equal('OK')
+                expect(body).to.include('CAC TAT')
+            })
+    })
+
+    it.only('Encontrar gato escondido', function () {
+        cy.get('#cat')
+            .invoke('show')
+            .should('be.visible')
+    })
 
 })
